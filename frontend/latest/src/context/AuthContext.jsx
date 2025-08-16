@@ -40,27 +40,51 @@
 //   );
 // }
 
-import { createContext, useContext, useState } from "react";
+//just for login
+// import { createContext, useContext, useState } from "react";
 
-const AuthCtx = createContext(null);
+// const AuthCtx = createContext(null);
 
-export const useAuth = () => useContext(AuthCtx);
+// export const useAuth = () => useContext(AuthCtx);
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
+// export function AuthProvider({ children }) {
+//   const [user, setUser] = useState(null);
 
-  const login = async ({ email, password }) => {
-    // TODO: replace with real API
-    const u = { name: "Demo", email, role: "shelter" };
-    setUser(u);
-    return u;
-  };
+//   const login = async ({ email, password }) => {
+//     // TODO: replace with real API
+//     const u = { name: "Demo", email, role: "shelter" };
+//     setUser(u);
+//     return u;
+//   };
 
-  const logout = () => setUser(null);
+//   const logout = () => setUser(null);
 
-  return (
-    <AuthCtx.Provider value={{ user, login, logout }}>
-      {children}
-    </AuthCtx.Provider>
-  );
+//   return (
+//     <AuthCtx.Provider value={{ user, login, logout }}>
+//       {children}
+//     </AuthCtx.Provider>
+//   );
+// }
+
+
+import React,{createContext,useContext,useEffect,useState} from 'react';
+const AuthContext = createContext(null);
+export const useAuth = () => useContext(AuthContext);
+
+export default function AuthProvider({children}){
+  const [user,setUser] = useState(null);
+  const [token,setToken] = useState(null);
+  const [loading,setLoading] = useState(true);
+
+  useEffect(()=>{
+    const raw = localStorage.getItem('pawpal_auth');
+    if(raw){ const p = JSON.parse(raw); setUser(p.user); setToken(p.token); }
+    setLoading(false);
+  },[]);
+
+  const login = (payload)=>{ setUser(payload.user); setToken(payload.token); localStorage.setItem('pawpal_auth', JSON.stringify(payload)); };
+  const logout = ()=>{ setUser(null); setToken(null); localStorage.removeItem('pawpal_auth'); };
+
+  return <AuthContext.Provider value={{user,token,login,logout,loading}}>{children}</AuthContext.Provider>;
 }
+

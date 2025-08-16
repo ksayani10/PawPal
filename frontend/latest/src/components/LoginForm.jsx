@@ -36,46 +36,127 @@
 // export default LoginForm;
 
 
+// for normal login
+// import { useState } from "react";
+// import { Link, useNavigate } from "react-router-dom";
+// import { useAuth } from "../context/AuthContext";
 
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+// export default function LoginForm() {
+//   const [f, setF] = useState({ email:"", password:"" });
+//   const [error, setError] = useState("");
+//   const nav = useNavigate();
+//   const { login } = useAuth();
+
+//   const onSubmit = async (e) => {
+//     e.preventDefault();
+//     if (!f.email || !f.password) return setError("Email and password are required.");
+//     setError("");
+
+//     try {
+//       const user = await login(f); // backend returns user.role
+//       if (user.role === "shelter") nav("/shelter/pets", { replace: true });
+//       else if (user.role === "admin") nav("/admin", { replace: true });
+//       else nav("/explore", { replace: true });
+//     } catch (err) {
+//       setError(err.message || "Login failed");
+//     }
+//   };
+
+//   return (
+//     <div className="max-w-md mx-auto bg-white rounded-2xl shadow p-6">
+//       <h1 className="text-2xl font-bold text-center mb-2">Login to PawPal</h1>
+//       {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+//       <form onSubmit={onSubmit} className="space-y-4">
+//         <input className="w-full rounded-xl border px-3 py-2" placeholder="Email" type="email"
+//                value={f.email} onChange={(e)=>setF({...f,email:e.target.value})}/>
+//         <input className="w-full rounded-xl border px-3 py-2" placeholder="Password" type="password"
+//                value={f.password} onChange={(e)=>setF({...f,password:e.target.value})}/>
+//         <button className="w-full rounded-xl bg-orange-500 text-white py-2.5 hover:bg-orange-600">Login</button>
+//       </form>
+//       <p className="text-center text-sm mt-3">
+//         Don't have an account? <Link className="text-orange-600 hover:underline" to="/signup">Sign up</Link>
+//       </p>
+//     </div>
+//   );
+// }
+
+
+
+// src/components/auth/LoginForm.jsx
+import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import { useNavigate, Link } from "react-router-dom";
+
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5002";
+const roleLanding = {
+  admin: "/admin",
+  shelter: "/shelter",
+  vet: "/vet",
+  owner: "/owner",
+  pet_seeker: "/",
+};
 
 export default function LoginForm() {
-  const [f, setF] = useState({ email:"", password:"" });
-  const [error, setError] = useState("");
   const nav = useNavigate();
   const { login } = useAuth();
+  const [form, setForm] = useState({ email: "", password: "" });
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const onSubmit = async (e) => {
+  const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const submit = async (e) => {
     e.preventDefault();
-    if (!f.email || !f.password) return setError("Email and password are required.");
-    setError("");
-
+    setErr(""); setLoading(true);
     try {
-      const user = await login(f); // backend returns user.role
-      if (user.role === "shelter") nav("/shelter/pets", { replace: true });
-      else if (user.role === "admin") nav("/admin", { replace: true });
-      else nav("/explore", { replace: true });
-    } catch (err) {
-      setError(err.message || "Login failed");
+      const res = await fetch(`${API_BASE}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Login failed");
+
+      // save auth + redirect by role
+      login(data);
+      nav(roleLanding[data.user.role] || "/", { replace: true });
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-md mx-auto bg-white rounded-2xl shadow p-6">
-      <h1 className="text-2xl font-bold text-center mb-2">Login to PawPal</h1>
-      {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
-      <form onSubmit={onSubmit} className="space-y-4">
-        <input className="w-full rounded-xl border px-3 py-2" placeholder="Email" type="email"
-               value={f.email} onChange={(e)=>setF({...f,email:e.target.value})}/>
-        <input className="w-full rounded-xl border px-3 py-2" placeholder="Password" type="password"
-               value={f.password} onChange={(e)=>setF({...f,password:e.target.value})}/>
-        <button className="w-full rounded-xl bg-orange-500 text-white py-2.5 hover:bg-orange-600">Login</button>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <form onSubmit={submit} className="w-full max-w-md bg-white rounded-2xl shadow p-6 space-y-4">
+        <h1 className="text-2xl font-semibold">Welcome back</h1>
+        {err && <p className="text-red-600 text-sm">{err}</p>}
+
+        <div>
+          <label className="block text-sm font-medium">Email</label>
+          <input
+            type="email" name="email" value={form.email} onChange={onChange}
+            className="mt-1 w-full border rounded-xl p-2" required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium">Password</label>
+          <input
+            type="password" name="password" value={form.password} onChange={onChange}
+            className="mt-1 w-full border rounded-xl p-2" required
+          />
+        </div>
+
+        <button disabled={loading} className="w-full rounded-xl py-2 bg-black text-white">
+          {loading ? "Logging in..." : "Log in"}
+        </button>
+
+        <p className="text-sm text-gray-600">
+          No account? <Link className="text-blue-600" to="/signup">Sign up</Link>
+        </p>
       </form>
-      <p className="text-center text-sm mt-3">
-        Don't have an account? <Link className="text-orange-600 hover:underline" to="/signup">Sign up</Link>
-      </p>
     </div>
   );
 }
