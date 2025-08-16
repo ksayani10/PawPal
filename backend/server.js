@@ -10,7 +10,18 @@ const path = require("path");
 
 const PORT = process.env.PORT || 5002;
 
- app.use(cors());
+//  app.use(cors());
+
+app.use(cors({
+  origin: ['http://localhost:5173','http://127.0.0.1:5173'],
+  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization'],
+}));
+
+
+//health check
+app.get('/api/health', (_req, res) => res.json({ ok: true }));
+
  app.use(express.json());
 
 
@@ -18,7 +29,7 @@ connectDB(); // ✅ Connects to MongoDB
 
 // Routes will go here
 app.use("/api/pets", require("./routes/petRoutes"));
-
+app.use('/api/auth', require('./routes/authRoutes'));
 // Test route
 app.get("/", (req, res) => {
   console.log("GET / called");

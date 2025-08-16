@@ -14,7 +14,7 @@ const PawPalHome = () => {
   useEffect(() => {
     const fetchPets = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/pets");
+        const response = await axios.get("http://localhost:5002/api/pets");
         setPets(response.data); // Make sure backend sends an array
       } catch (error) {
         console.error("Error fetching pets:", error);
