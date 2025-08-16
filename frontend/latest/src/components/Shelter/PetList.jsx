@@ -97,6 +97,9 @@
 // src/components/Shelter/PetList.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+
 
 const API_BASE = import.meta?.env?.VITE_API_BASE || "";
 
@@ -168,6 +171,35 @@ export default function PetList() {
     }
   }
 
+  //download pdf
+  const downloadPDF = () => {
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+
+  doc.text("Pet List", 40, 30);
+
+  const head = [["Code", "Name", "Breed", "Status", "Age", "Gender", "Added"]];
+  const body = rows.map((p) => [
+    `#${(p._id || "").slice(-6)}`,
+    p.name || "—",
+    p.breed || "—",
+    p.status || "—",
+    p.age ?? "—",
+    p.gender || "—",
+    p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "—", // ✅ correct casing
+  ]);
+
+  autoTable(doc, {
+    head,
+    body,
+    startY: 50,
+    styles: { fontSize: 9, cellPadding: 6 },
+    headStyles: { fillColor: [243, 244, 246], textColor: 0 },
+    margin: { left: 40, right: 40 },
+  });
+
+  doc.save("pet_list.pdf");
+};
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -177,7 +209,8 @@ export default function PetList() {
           <p className="text-xs text-gray-500">View, filter and manage all pets</p>
         </div>
         <div className="flex items-center gap-2">
-          <button className="hidden rounded-lg border px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 sm:block">
+          {/* <button className="hidden rounded-lg border px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 sm:block"> */}
+            <button onClick={downloadPDF} className="hidden rounded-lg border px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 sm:block">
             Download PDF
           </button>
           <Link
