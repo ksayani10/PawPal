@@ -21,7 +21,6 @@ export default function App() {
   return (
     <Router>
       <AuthProvider>   {/* ✅ must wrap anything that uses useAuth */}
-        <Navbar />
         <Routes>
           {/* Optional: make root go straight to the pets list */}
            {/* <Route path="/" element={<PawPalHome />} />
@@ -52,22 +51,17 @@ export default function App() {
           {/* protected area with Outlet */}
           <Route element={<ProtectedRoute allow={["shelter", "admin"]} />}>
             <Route path="/shelter" element={<DashboardLayout />}>
-              <Route path="dash" element={<ShelterDashboard />} />
+                 <Route index element={<ShelterDashboard />} />      
               <Route path="pets" element={<PetsPage />} />
               <Route path="settings" element={<ShelterSettings />} />
               <Route path="/shelter/pets/new" element ={<AddPetPage/>}/>
               <Route path="/shelter/pets/:id/edit" element ={<EditPetPage/>} />
+              <Route path="/shelter/profile" element ={<Profile/>} />
              
             </Route>
           </Route>
 
-  {/* <Route path="/shelter/pets/new" element={ <ProtectedRoute allow={["shelter"]}>
-                <AddPetPage />
-              </ProtectedRoute>} /> */}
-
-  {/* <Route path="/shelter/pets/:id/edit" element={<ProtectedRoute allow={["shelter"]}>
-      <EditPetPage />
-    </ProtectedRoute>  }/> */}
+  
 
         </Routes>
       </AuthProvider>

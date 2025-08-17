@@ -1,109 +1,22 @@
-// import { useEffect, useState } from "react";
-// import { Link } from "react-router-dom";
-// import { API_BASE } from "../../config";
-// import { useAuth } from "../../context/AuthContext";
-
-// export default function PetList() {
-//   const { token } = useAuth();
-//   const [pets, setPets] = useState([]);
-//   const [err, setErr] = useState("");
-
-//   const auth = token ? { Authorization: `Bearer ${token}` } : {};
-
-// //   useEffect(() => {
-// //     (async () => {
-// //       try {
-// //         setErr("");
-// //         const res = await fetch(`${API_BASE}/api/pets`, { headers: auth });
-// //         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-// //         const data = await res.json();
-// //         setPets(data);
-// //       } catch (e) {
-// //         console.error(e);
-// //         setErr("Failed to load pets");
-// //       }
-// //     })();
-// //   }, []);
-
-
-// useEffect(() => {
-//   (async () => {
-//     try {
-//       setErr("");
-//       const auth = token ? { Authorization: `Bearer ${token}` } : {};
-//       const res = await fetch(`${API_BASE}/api/pets`, {
-//         headers: auth,
-//       });
-//       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//       const data = await res.json();
-//       setPets(data);
-//     } catch (e) {
-//       console.error(e);
-//       setErr("Failed to load pets");
-//     }
-//   })();
-// }, [token]);
 
 
 
 
-//   return (
-//     <div>
-//       <div className="flex justify-between items-center mb-4">
-//         <h1 className="text-2xl font-semibold">Pets</h1>
-//         <Link
-//           to="/shelter/pets/new"
-//           className="rounded-lg bg-orange-500 px-4 py-2 text-white"
-//         >
-//           + Add New Pet
-//         </Link>
-//       </div>
-
-//       {err && <p className="text-red-500">{err}</p>}
-
-//       {pets.length === 0 ? (
-//         <p>No pets found.</p>
-//       ) : (
-//         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-//           {pets.map((p) => (
-//             <li
-//               key={p._id}
-//               className="border rounded-lg p-3 hover:shadow transition"
-//             >
-//               {p.imageUrl && (
-//                 <img
-//                   src={
-//                     p.imageUrl.startsWith("http")
-//                       ? p.imageUrl
-//                       : `${API_BASE}${p.imageUrl}`
-//                   }
-//                   alt={p.name}
-//                   className="h-40 w-full object-cover rounded"
-//                 />
-//               )}
-//               <h3 className="text-lg font-bold">{p.name}</h3>
-//               <p className="text-sm text-gray-600">
-//                 {p.breed || "—"} • {p.gender || "—"} • {p.age ?? "—"} yrs
-//               </p>
-//             </li>
-//           ))}
-//         </ul>
-//       )}
-//     </div>
-//   );
-// }
-
-
-// src/components/Shelter/PetList.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { useAuth } from "../../context/AuthContext";
 
-
-const API_BASE = import.meta?.env?.VITE_API_BASE || "";
+const API_BASE = import.meta?.env?.VITE_API_BASE || "http://localhost:5002";
+const api = (p) => `${API_BASE}${p}`;
+const isAbs = (u = "") => /^https?:\/\//i.test(u);
+const imgSrc = (u = "") => (u ? (isAbs(u) ? u : api(u)) : "/assets/placeholder-pet.jpg");
 
 export default function PetList() {
+  const { token } = useAuth();
+  const auth = token ? { Authorization: `Bearer ${token}` } : {};
+
   const [pets, setPets] = useState([]);
   const [loading, setLoading] = useState(false);
   const [q, setQ] = useState("");
@@ -115,8 +28,10 @@ export default function PetList() {
   useEffect(() => {
     (async () => {
       try {
+        setError("");
         setLoading(true);
-        const res = await fetch(`${API_BASE}/api/pets`);
+        const res = await fetch(api("/api/pets"), { headers: auth });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         setPets(Array.isArray(data) ? data : []);
       } catch (e) {
@@ -126,19 +41,19 @@ export default function PetList() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [token]); // refetch when auth changes
 
-  // Derived view
+  // Derived rows
   const rows = useMemo(() => {
     let list = [...pets];
     const query = q.trim().toLowerCase();
-
     if (query) {
       list = list.filter((p) =>
-        `${p.name} ${p.breed} ${p.gender}`.toLowerCase().includes(query)
+        `${p.name ?? ""} ${p.breed ?? ""} ${p.gender ?? ""}`.toLowerCase().includes(query)
       );
     }
-    if (status !== "All") list = list.filter((p) => p.status === status);
+    const norm = (s) => (s || "Available");
+    if (status !== "All") list = list.filter((p) => norm(p.status) === status);
 
     switch (sort) {
       case "Age Low→High":
@@ -158,47 +73,45 @@ export default function PetList() {
 
   async function onDelete(id) {
     if (!confirm("Delete this pet?")) return;
+    const backup = pets;
+    setPets((prev) => prev.filter((p) => p._id !== id)); // optimistic
     try {
-      setLoading(true);
-      const res = await fetch(`${API_BASE}/api/pets/${id}`, { method: "DELETE" });
+      const res = await fetch(api(`/api/pets/${id}`), { method: "DELETE", headers: auth });
       if (!res.ok) throw new Error("Delete failed");
-      setPets((prev) => prev.filter((p) => p._id !== id));
     } catch (e) {
       console.error(e);
       setError("Could not delete pet");
-    } finally {
-      setLoading(false);
+      setPets(backup); // rollback
     }
   }
 
-  //download pdf
+  // PDF export
   const downloadPDF = () => {
-  const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    doc.text("Pet List", 40, 30);
 
-  doc.text("Pet List", 40, 30);
+    const head = [["Code", "Name", "Breed", "Status", "Age", "Gender", "Added"]];
+    const body = rows.map((p) => [
+      `#${(p._id || "").slice(-6)}`,
+      p.name || "—",
+      p.breed || "—",
+      p.status || "—",
+      p.age ?? "—",
+      p.gender || "—",
+      p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "—",
+    ]);
 
-  const head = [["Code", "Name", "Breed", "Status", "Age", "Gender", "Added"]];
-  const body = rows.map((p) => [
-    `#${(p._id || "").slice(-6)}`,
-    p.name || "—",
-    p.breed || "—",
-    p.status || "—",
-    p.age ?? "—",
-    p.gender || "—",
-    p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "—", // ✅ correct casing
-  ]);
+    autoTable(doc, {
+      head,
+      body,
+      startY: 50,
+      styles: { fontSize: 9, cellPadding: 6 },
+      headStyles: { fillColor: [243, 244, 246], textColor: 0 },
+      margin: { left: 40, right: 40 },
+    });
 
-  autoTable(doc, {
-    head,
-    body,
-    startY: 50,
-    styles: { fontSize: 9, cellPadding: 6 },
-    headStyles: { fillColor: [243, 244, 246], textColor: 0 },
-    margin: { left: 40, right: 40 },
-  });
-
-  doc.save("pet_list.pdf");
-};
+    doc.save("pet_list.pdf");
+  };
 
   return (
     <div className="space-y-4">
@@ -209,8 +122,10 @@ export default function PetList() {
           <p className="text-xs text-gray-500">View, filter and manage all pets</p>
         </div>
         <div className="flex items-center gap-2">
-          {/* <button className="hidden rounded-lg border px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 sm:block"> */}
-            <button onClick={downloadPDF} className="hidden rounded-lg border px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 sm:block">
+          <button
+            onClick={downloadPDF}
+            className="hidden sm:inline-flex rounded-lg border px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+          >
             Download PDF
           </button>
           <Link
@@ -293,13 +208,7 @@ export default function PetList() {
                 <tr key={p._id || i} className="hover:bg-gray-50/60">
                   <Td>
                     <div className="h-10 w-12 overflow-hidden rounded-md bg-gray-100 ring-1 ring-gray-200">
-                      {p.imageUrl ? (
-                        <img src={p.imageUrl} alt={p.name} className="h-full w-full object-cover" />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-[10px] text-gray-400">
-                          No image
-                        </div>
-                      )}
+                      <img src={imgSrc(p.imageUrl)} alt={p.name} className="h-full w-full object-cover" />
                     </div>
                   </Td>
                   <Td className="text-xs text-gray-500">#{(p._id || "").slice(-6)}</Td>
@@ -308,18 +217,18 @@ export default function PetList() {
                   <Td>
                     <Badge
                       color={
-                        p.status === "Available"
+                        (p.status || "Available") === "Available"
                           ? "green"
-                          : p.status === "Pending"
+                          : (p.status || "") === "Pending"
                           ? "amber"
                           : "gray"
                       }
                     >
-                      {p.status || "—"}
+                      {p.status || "Available"}
                     </Badge>
                   </Td>
                   <Td>{p.age ?? "—"}</Td>
-                  <Td>{p.gender || "—"}</Td>
+                  <Td className="capitalize">{p.gender || "—"}</Td>
                   <Td className="text-xs text-gray-500">
                     {p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "—"}
                   </Td>
@@ -368,3 +277,5 @@ function Badge({ color = "gray", children }) {
   };
   return <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs ring-1 ${map[color]}`}>{children}</span>;
 }
+
+
