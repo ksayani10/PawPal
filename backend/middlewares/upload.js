@@ -25,25 +25,45 @@
 
 
 // middlewares/upload.js
+// const path = require("path");
+// const multer = require("multer");
+
+// const storage = multer.diskStorage({
+//   destination: (req, file, cb) => cb(null, path.join(__dirname, "..", "uploads")),
+//   filename: (req, file, cb) => {
+//     const ext = path.extname(file.originalname);
+//     const base = path.basename(file.originalname, ext).replace(/\s+/g, "_");
+//     cb(null, `${Date.now()}_${base}${ext}`);
+//   },
+// });
+
+// const fileFilter = (req, file, cb) => {
+//   const ok = ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.mimetype);
+//   cb(ok ? null : new Error("Only JPG/PNG/WebP/GIF allowed"), ok);
+// };
+
+// module.exports = multer({
+//   storage,
+//   fileFilter,
+//   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+// });
+
+
+// middlewares/upload.js
 const path = require("path");
+const fs = require("fs");
 const multer = require("multer");
 
+const uploadsDir = path.join(process.cwd(), "uploads");
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
+
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, path.join(__dirname, "..", "uploads")),
-  filename: (req, file, cb) => {
+  destination: (_req, _file, cb) => cb(null, uploadsDir),
+  filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname);
-    const base = path.basename(file.originalname, ext).replace(/\s+/g, "_");
-    cb(null, `${Date.now()}_${base}${ext}`);
-  },
+    const base = path.basename(file.originalname, ext).replace(/\s+/g, "-");
+    cb(null, `${Date.now()}-${base}${ext}`);
+  }
 });
 
-const fileFilter = (req, file, cb) => {
-  const ok = ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.mimetype);
-  cb(ok ? null : new Error("Only JPG/PNG/WebP/GIF allowed"), ok);
-};
-
-module.exports = multer({
-  storage,
-  fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
-});
+module.exports = multer({ storage });

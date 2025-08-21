@@ -2,6 +2,7 @@ const express = require("express");
 const app = express();
 const connectDB = require("./config/connectDB");
  const cors = require("cors");
+ 
 
 const dotenv = require("dotenv").config();
 
@@ -12,12 +13,13 @@ const PORT = process.env.PORT || 5002;
 
 //  app.use(cors());
 
-app.use(cors({
-  origin: ['http://localhost:5173','http://127.0.0.1:5173'],
-  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization'],
-}));
+// app.use(cors({
+//   origin: ['http://localhost:5173','http://127.0.0.1:5173'],
+//   methods: ['GET','POST','PUT','DELETE','OPTIONS'],
+//   allowedHeaders: ['Content-Type','Authorization'],
+// }));
 
+app.use(cors({ origin: true, credentials: true }));
 
 //health check
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
@@ -46,4 +48,5 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.listen(PORT, (err) => {
   console.log(`Server is running on port ${PORT}`);
 });
+
 
