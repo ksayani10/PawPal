@@ -8,10 +8,11 @@ const dotenv = require("dotenv").config();
 
 //for multer
 const path = require("path");
+const articleRoutes = require("./routes/articleRoutes");
 
 const PORT = process.env.PORT || 5002;
 
-//  app.use(cors());
+ app.use(cors());
 
 // app.use(cors({
 //   origin: ['http://localhost:5173','http://127.0.0.1:5173'],
