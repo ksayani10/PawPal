@@ -83,18 +83,93 @@
 
 
 // src/components/auth/LoginForm.jsx
+// import React, { useState } from "react";
+// import { useAuth } from "../context/AuthContext";
+// import { useNavigate, Link } from "react-router-dom";
+// //chnage
+// import { roleLanding } from "../constants/roleLanding";
+
+// const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5002";
+// const roleLanding = {
+//   admin: "/admin",
+//   shelter: "/shelter",
+//   vet: "/vet",
+//   owner: "/owner",
+//   pet_seeker: "/",
+// };
+
+// export default function LoginForm() {
+//   const nav = useNavigate();
+//   const { login } = useAuth();
+//   const [form, setForm] = useState({ email: "", password: "" });
+//   const [err, setErr] = useState("");
+//   const [loading, setLoading] = useState(false);
+
+//   const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+//   const submit = async (e) => {
+//     e.preventDefault();
+//     setErr(""); setLoading(true);
+//     try {
+//       const res = await fetch(`${API_BASE}/api/auth/login`, {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify(form),
+//       });
+//       const data = await res.json();
+//       if (!res.ok) throw new Error(data.message || "Login failed");
+
+//       // save auth + redirect by role
+//       login(data);
+//       nav(roleLanding[data.user.role] || "/", { replace: true });
+//     } catch (e) {
+//       setErr(e.message);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   return (
+//     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+//       <form onSubmit={submit} className="w-full max-w-md bg-white rounded-2xl shadow p-6 space-y-4">
+//         <h1 className="text-2xl font-semibold">Welcome back</h1>
+//         {err && <p className="text-red-600 text-sm">{err}</p>}
+
+//         <div>
+//           <label className="block text-sm font-medium">Email</label>
+//           <input
+//             type="email" name="email" value={form.email} onChange={onChange}
+//             className="mt-1 w-full border rounded-xl p-2" required
+//           />
+//         </div>
+
+//         <div>
+//           <label className="block text-sm font-medium">Password</label>
+//           <input
+//             type="password" name="password" value={form.password} onChange={onChange}
+//             className="mt-1 w-full border rounded-xl p-2" required
+//           />
+//         </div>
+
+//         <button disabled={loading} className="w-full rounded-xl py-2 bg-black text-white">
+//           {loading ? "Logging in..." : "Log in"}
+//         </button>
+
+//         <p className="text-sm text-gray-600">
+//           No account? <Link className="text-blue-600" to="/signup">Sign up</Link>
+//         </p>
+//       </form>
+//     </div>
+//   );
+// }
+
+// src/components/auth/LoginForm.jsx
 import React, { useState } from "react";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext";     // <- path update
 import { useNavigate, Link } from "react-router-dom";
+import { roleLanding } from "../constants/roleLanding";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5002";
-const roleLanding = {
-  admin: "/admin",
-  shelter: "/shelter",
-  vet: "/vet",
-  owner: "/owner",
-  pet_seeker: "/",
-};
 
 export default function LoginForm() {
   const nav = useNavigate();
@@ -117,9 +192,10 @@ export default function LoginForm() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Login failed");
 
-      // save auth + redirect by role
+      // data must be { token, user: { id, role, email, name } }
       login(data);
-      nav(roleLanding[data.user.role] || "/", { replace: true });
+      const to = roleLanding[data.user?.role] || "/";
+      nav(to, { replace: true });
     } catch (e) {
       setErr(e.message);
     } finally {
@@ -132,27 +208,19 @@ export default function LoginForm() {
       <form onSubmit={submit} className="w-full max-w-md bg-white rounded-2xl shadow p-6 space-y-4">
         <h1 className="text-2xl font-semibold">Welcome back</h1>
         {err && <p className="text-red-600 text-sm">{err}</p>}
-
         <div>
           <label className="block text-sm font-medium">Email</label>
-          <input
-            type="email" name="email" value={form.email} onChange={onChange}
-            className="mt-1 w-full border rounded-xl p-2" required
-          />
+          <input type="email" name="email" value={form.email} onChange={onChange}
+            className="mt-1 w-full border rounded-xl p-2" required />
         </div>
-
         <div>
           <label className="block text-sm font-medium">Password</label>
-          <input
-            type="password" name="password" value={form.password} onChange={onChange}
-            className="mt-1 w-full border rounded-xl p-2" required
-          />
+          <input type="password" name="password" value={form.password} onChange={onChange}
+            className="mt-1 w-full border rounded-xl p-2" required />
         </div>
-
         <button disabled={loading} className="w-full rounded-xl py-2 bg-black text-white">
           {loading ? "Logging in..." : "Log in"}
         </button>
-
         <p className="text-sm text-gray-600">
           No account? <Link className="text-blue-600" to="/signup">Sign up</Link>
         </p>

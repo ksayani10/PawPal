@@ -1,5 +1,5 @@
 import React from 'react'
-import PetProfile from '../components/PetProfile';
+import PetProfile from '../components/Shelter/PetProfile';
 
 const  Profile = () => {
   return (

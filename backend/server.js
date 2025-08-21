@@ -23,13 +23,15 @@ app.use(cors({
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
  app.use(express.json());
+ app.use('/api/auth', require('./routes/authRoutes'));
 
 
 connectDB(); // ✅ Connects to MongoDB
 
 // Routes will go here
 app.use("/api/pets", require("./routes/petRoutes"));
-app.use('/api/auth', require('./routes/authRoutes'));
+
+app.use('api/articles' ,require("./routes/articleRoutes"));
 // Test route
 app.get("/", (req, res) => {
   console.log("GET / called");
