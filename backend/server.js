@@ -20,8 +20,7 @@ const PORT = process.env.PORT || 5002;
 //   allowedHeaders: ['Content-Type','Authorization'],
 // }));
 
-app.use(cors({ origin: true, credentials: true }));
-
+app.use(cors({ origin: "http://localhost:5173", credentials: true })); 
 //health check
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
