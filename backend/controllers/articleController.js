@@ -202,27 +202,42 @@
 const Article = require("../models/Article");
 
 // Create new article
+// exports.createArticle = async (req, res) => {
+//   try {
+//     const { title, category, author, status, content } = req.body;
+//     const image = req.file ? `/uploads/${req.file.filename}` : null;
+
+//     const article = new Article({
+//       title,
+//       category,
+//       author,
+//       status,
+//       content:content || body,
+//       image,
+//     });
+
+//     await article.save();
+//     res.status(201).json(article);
+//   } catch (err) {
+//     console.error("Error creating article:", err);
+//     res.status(500).json({ message: "Server error creating article" });
+//   }
+// };
+
+
 exports.createArticle = async (req, res) => {
   try {
-    const { title, category, author, status, content } = req.body;
-    const image = req.file ? `/uploads/${req.file.filename}` : null;
+    const { title, category, author, status, content, imageUrl } = req.body;
+    const image = req.file ? `/uploads/${req.file.filename}` : imageUrl || null;
 
-    const article = new Article({
-      title,
-      category,
-      author,
-      status,
-      content,
-      image,
-    });
-
-    await article.save();
+    const article = await Article.create({ title, category, author, status, content, image });
     res.status(201).json(article);
   } catch (err) {
-    console.error("Error creating article:", err);
+    console.error("createArticle error:", err);
     res.status(500).json({ message: "Server error creating article" });
   }
 };
+
 
 // Get all articles
 exports.getArticles = async (req, res) => {
@@ -246,23 +261,41 @@ exports.getArticleById = async (req, res) => {
 };
 
 // Update article
+// exports.updateArticle = async (req, res) => {
+//   try {
+//     const { title, category, author, status, content } = req.body;
+//     const updateData = { title, category, author, status, content };
+
+//     if (req.file) {
+//       updateData.image = `/uploads/${req.file.filename}`;
+//     }
+
+//     const updated = await Article.findByIdAndUpdate(req.params.id, updateData, { new: true });
+//     if (!updated) return res.status(404).json({ message: "Article not found" });
+
+//     res.json(updated);
+//   } catch (err) {
+//     res.status(500).json({ message: "Server error updating article" });
+//   }
+// };
+
+
 exports.updateArticle = async (req, res) => {
   try {
-    const { title, category, author, status, content } = req.body;
-    const updateData = { title, category, author, status, content };
+    const { title, category, author, status, content, imageUrl } = req.body;
+    const update = { title, category, author, status, content };
+    if (req.file) update.image = `/uploads/${req.file.filename}`;
+    else if (imageUrl) update.image = imageUrl;
 
-    if (req.file) {
-      updateData.image = `/uploads/${req.file.filename}`;
-    }
-
-    const updated = await Article.findByIdAndUpdate(req.params.id, updateData, { new: true });
-    if (!updated) return res.status(404).json({ message: "Article not found" });
-
-    res.json(updated);
+    const doc = await Article.findByIdAndUpdate(req.params.id, update, { new: true });
+    if (!doc) return res.status(404).json({ message: "Not found" });
+    res.json(doc);
   } catch (err) {
+    console.error("updateArticle error:", err);
     res.status(500).json({ message: "Server error updating article" });
   }
 };
+
 
 // Delete article
 exports.deleteArticle = async (req, res) => {

@@ -8,7 +8,7 @@ const EMPTY = {
   category: "",
   author: "",
   status: "Draft",
-  body: "",
+  content: "",
 };
 
 export default function AddArticlePage() {
@@ -19,8 +19,7 @@ export default function AddArticlePage() {
   const [err, setErr] = useState("");
   const nav = useNavigate();
 
-  const onChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
-
+  const onChange = (e) =>   setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
   const onFile = (e) => {
     const f = e.target.files?.[0];
     setFile(f || null);
@@ -45,7 +44,7 @@ export default function AddArticlePage() {
         const j = await res.json().catch(() => ({}));
         throw new Error(j.message || `Failed with ${res.status}`);
       }
-      nav("/articles");
+      nav("/admin/articles");
     } catch (e2) {
       setErr(e2.message);
     } finally {
@@ -113,7 +112,7 @@ export default function AddArticlePage() {
               className="w-full px-3 py-2 rounded-xl border"
             >
               <option>Draft</option>
-              <option>Pending</option>
+              {/* <option>Pending</option> */}
               <option>Published</option>
             </select>
           </div>
@@ -122,10 +121,7 @@ export default function AddArticlePage() {
         {/* body */}
         <div className="mt-4">
           <label className="block text-sm font-medium mb-1">Content</label>
-          <textarea
-            name="body"
-            value={form.body}
-            onChange={onChange}
+           <textarea name="content" value={form.content} onChange={onChange}
             rows={6}
             className="w-full px-3 py-2 rounded-xl border"
             placeholder="Write the article content here…"
