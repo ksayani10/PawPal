@@ -67,24 +67,66 @@
 // }
 
 
-import React,{createContext,useContext,useEffect,useState} from 'react';
-const AuthContext = createContext(null);
-export const useAuth = () => useContext(AuthContext);
+// import React,{createContext,useContext,useEffect,useState} from 'react';
+// const AuthContext = createContext(null);
+// export const useAuth = () => useContext(AuthContext);
 
-export default function AuthProvider({children}){
-  const [user,setUser] = useState(null);
-  const [token,setToken] = useState(null);
-  const [loading,setLoading] = useState(true);
+// export default function AuthProvider({children}){
+//   const [user,setUser] = useState(null);
+//   const [token,setToken] = useState(null);
+//   const [loading,setLoading] = useState(true);
 
-  useEffect(()=>{
-    const raw = localStorage.getItem('pawpal_auth');
-    if(raw){ const p = JSON.parse(raw); setUser(p.user); setToken(p.token); }
+//   useEffect(()=>{
+//     const raw = localStorage.getItem('pawpal_auth');
+//     if(raw){ const p = JSON.parse(raw); setUser(p.user); setToken(p.token); }
+//     setLoading(false);
+//   },[]);
+
+//   const login = (payload)=>{ setUser(payload.user); setToken(payload.token); localStorage.setItem('pawpal_auth', JSON.stringify(payload)); };
+//   const logout = ()=>{ setUser(null); setToken(null); localStorage.removeItem('pawpal_auth'); };
+
+//   return <AuthContext.Provider value={{user,token,login,logout,loading}}>{children}</AuthContext.Provider>;
+// }
+
+// src/context/AuthContext.jsx
+import { createContext, useContext, useEffect, useState } from "react";
+
+const Ctx = createContext(null);
+
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);     // { id, role, email, name }
+  const [token, setToken] = useState(null);   // JWT
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const raw = localStorage.getItem("auth");
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        setUser(parsed.user || null);
+        setToken(parsed.token || null);
+      } catch {}
+    }
     setLoading(false);
-  },[]);
+  }, []);
 
-  const login = (payload)=>{ setUser(payload.user); setToken(payload.token); localStorage.setItem('pawpal_auth', JSON.stringify(payload)); };
-  const logout = ()=>{ setUser(null); setToken(null); localStorage.removeItem('pawpal_auth'); };
+  const login = ({ token, user }) => {
+    setUser(user);
+    setToken(token);
+    localStorage.setItem("auth", JSON.stringify({ token, user }));
+  };
 
-  return <AuthContext.Provider value={{user,token,login,logout,loading}}>{children}</AuthContext.Provider>;
+  const logout = () => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem("auth");
+  };
+
+  return (
+    <Ctx.Provider value={{ user, token, loading, login, logout }}>
+      {children}
+    </Ctx.Provider>
+  );
 }
 
+export const useAuth = () => useContext(Ctx);
