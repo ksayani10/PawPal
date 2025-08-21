@@ -33,7 +33,7 @@ connectDB(); // ✅ Connects to MongoDB
 // Routes will go here
 app.use("/api/pets", require("./routes/petRoutes"));
 
-app.use('api/articles' ,require("./routes/articleRoutes"));
+app.use("/api/articles" ,require("./routes/articleRoutes"));
 // Test route
 app.get("/", (req, res) => {
   console.log("GET / called");
