@@ -17,7 +17,8 @@ import DashboardLayout from "./layouts/DashboardLayout";
 import ShelterDashboard from "./pages/ShelterDashboard";
 import ShelterSettings from "./pages/ShelterSettings";
 import AdminDashboard from "./pages/Admin/AdminDashboard";
-import Articles from "./pages/Admin/Articles";
+import Articles from "./pages/Admin/ArticleList";
+import AddArticle from "./pages/Admin/AddArticlePage";
 
 
 
@@ -58,6 +59,7 @@ export default function App() {
 
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/articles" element={<Articles/>}/>
+            <Route path="/articles/new" element ={<AddArticle/>}/>
             {/* ...other admin routes */}
           
           </Route>
