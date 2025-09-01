@@ -6,8 +6,8 @@ const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5002";
 
 const statusPill = (s) =>
   s === "Published" ? "bg-green-100 text-green-700"
-: s === "Pending"   ? "bg-yellow-100 text-yellow-700"
-: "bg-gray-100 text-gray-700";
+    : s === "Pending" ? "bg-yellow-100 text-yellow-700"
+      : "bg-gray-100 text-gray-700";
 
 export default function ArticleList() {
   const [items, setItems] = useState([]);
@@ -142,15 +142,17 @@ export default function ArticleList() {
               <tr><td className="px-4 py-8 text-center text-gray-500" colSpan={8}>No articles</td></tr>
             )}
             {!loading && filtered.map((a) => (
+
               <tr key={a._id} className="border-t">
+
                 <td className="px-4 py-2">
                   <button
                     className="block rounded-xl overflow-hidden w-14 h-14 bg-gray-100"
-                    onClick={() => a.imageUrl && setPreviewSrc(a.imageUrl)}
+                    onClick={() => a.image && setPreviewSrc(a.image)}
                     title="Click to preview"
                   >
-                    {a.imageUrl ? (
-                      <img src={a.imageUrl} alt="" className="w-full h-full object-cover" />
+                    {a.image ? (
+                      <img src={a.image} alt="" className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full grid place-items-center text-xs text-gray-400">No Image</div>
                     )}

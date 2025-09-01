@@ -66,7 +66,7 @@ export default function App() {
 
           {/* protected area with Outlet */}
           <Route element={<ProtectedRoute allow={["shelter"]} />}>
-            <Route path="/shelter" element={<DashboardLayout />}>
+            <Route path="/shelter/" element={<DashboardLayout />}>
                  <Route path="/shelter/dashboard" element={<ShelterDashboard />} />      
               <Route path="pets" element={<PetsPage />} />
               <Route path="settings" element={<ShelterSettings />} />

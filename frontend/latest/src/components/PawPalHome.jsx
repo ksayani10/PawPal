@@ -270,7 +270,7 @@ export default function PawPalHome() {
           <div className="relative">
             <div className="rounded-3xl overflow-hidden ring-1 ring-gray-200 shadow-sm bg-white">
               <img
-                src="/assets/hero-pet.jpg"
+                src={hero}
                 onError={(e) => { e.currentTarget.src = "/assets/hero-pet.png"; }}
                 alt="Happy dog and cat"
                 className="h-80 w-full object-cover md:h-[28rem]"
