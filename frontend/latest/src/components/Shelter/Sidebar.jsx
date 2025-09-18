@@ -121,7 +121,7 @@ const active= "bg-orange-50 text-orange-900 border-l-4 border-orange-500";
         <div className="absolute bottom-4 left-0 right-0 px-3">
           <button
             className={`${base} ${idle} w-full ${collapsed ? "justify-center" : ""}`}
-            onClick={()=>{ logout(); nav("/login", { replace:true }); }}
+            onClick={()=>{ logout(); nav("/", { replace:true }); }}
           >
             <LogOut size={18} /> {!collapsed && <span>Logout</span>}
           </button>
