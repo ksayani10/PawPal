@@ -19,6 +19,10 @@ import ShelterSettings from "./pages/ShelterSettings";
 import AdminDashboard from "./pages/Admin/AdminDashboard";
 import Articles from "./pages/Admin/ArticleList";
 import AddArticle from "./pages/Admin/AddArticlePage";
+import EditArticlePage from "./pages/Admin/EditArticlePage";
+import UserList from "./pages/Admin/UserList";
+import EditUserPage from "./pages/Admin/EditUserPage";
+import AddUserPage from "./pages/Admin/AddUserPage";
 
 
 
@@ -60,6 +64,10 @@ export default function App() {
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/articles" element={<Articles/>}/>
             <Route path="/articles/new" element ={<AddArticle/>}/>
+          <Route path="/articles/edit/:id" element={<EditArticlePage />} />
+          <Route path="/admin/users" element={<UserList/>}/>
+           <Route path="/admin/users/:id/edit" element={<EditUserPage/>}/>
+             <Route path="/admin/users/new" element={<AddUserPage/>}/>
             {/* ...other admin routes */}
           
           </Route>
