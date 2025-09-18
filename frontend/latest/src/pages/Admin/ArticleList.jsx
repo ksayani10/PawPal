@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
+
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5002";
 
@@ -18,24 +19,53 @@ export default function ArticleList() {
   const [err, setErr] = useState("");
   const [previewSrc, setPreviewSrc] = useState("");
 
-  const load = async () => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams({ q, status, sort });
-      const res = await fetch(`${API_BASE}/api/articles?${params.toString()}`);
-      const data = await res.json();
-      setItems(Array.isArray(data) ? data : []);
-    } catch (e) {
-      console.error(e);
-      setErr("Failed to load articles");
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [q, status, sort]);
+  // const load = async () => {
+  //   try {
+  //     setLoading(true);
+  //     const params = new URLSearchParams({ q, status, sort });
+  //     const res = await fetch(`${API_BASE}/api/articles?${params.toString()}`);
+  //     const data = await res.json();
+  //     setItems(Array.isArray(data) ? data : []);
+  //   } catch (e) {
+  //     console.error(e);
+  //     setErr("Failed to load articles");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
-  const filtered = useMemo(() => items, [items]);
+  // useEffect(() => { load(); /* eslint-disable-next-line */ }, [q, status, sort]);
+
+  // const filtered = useMemo(() => items, [items]);
+
+const load = async () => {
+  try {
+    setLoading(true);
+
+    const params = new URLSearchParams();
+    if (q.trim()) params.set("q", q.trim());
+    if (status !== "All") params.set("status", status); // ✅ only add when not "All"
+    if (sort) params.set("sort", sort);
+
+    const res = await fetch(`${API_BASE}/api/articles?${params.toString()}`);
+    const data = await res.json();
+    setItems(Array.isArray(data) ? data : []);
+  } catch (e) {
+    console.error(e);
+    setErr("Failed to load articles");
+  } finally {
+    setLoading(false);
+  }
+};
+
+useEffect(() => {
+  load();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [q, status, sort]);
+
+const filtered = useMemo(() => items, [items]);
+
 
   const handleDelete = async (id) => {
     if (!confirm("Delete this article?")) return;
@@ -58,13 +88,21 @@ export default function ArticleList() {
       new Date(a.createdAt).toLocaleDateString(),
     ]);
 
-    doc.autoTable({
+    // doc.autoTable({
+    //   startY: 60,
+    //   head: [["#", "CODE", "TITLE", "CATEGORY", "STATUS", "AUTHOR", "ADDED"]],
+    //   body: rows,
+    //   styles: { fontSize: 9, cellPadding: 6, halign: "left", valign: "middle" },
+    //   headStyles: { fillColor: [33, 33, 33] },
+    // });
+
+    autoTable(doc, {
       startY: 60,
       head: [["#", "CODE", "TITLE", "CATEGORY", "STATUS", "AUTHOR", "ADDED"]],
       body: rows,
       styles: { fontSize: 9, cellPadding: 6, halign: "left", valign: "middle" },
-      headStyles: { fillColor: [33, 33, 33] },
-    });
+      headStyles: { fillColor: [33, 33, 33] }
+        });
 
     doc.save("articles.pdf");
   };
@@ -76,13 +114,17 @@ export default function ArticleList() {
           <h1 className="text-2xl font-semibold">Manage Articles</h1>
           <p className="text-sm text-gray-500">View, filter and manage all articles</p>
         </div>
+        
         <div className="flex gap-3">
-          <button
+          <button type="button"
             onClick={downloadPdf}
             className="px-4 py-2 rounded-xl border text-sm hover:bg-gray-50"
           >
             Download PDF
           </button>
+          <a href="/admin/dashboard" className="px-4 py-2 rounded-xl border text-sm hover:bg-gray-50">
+            Back to Dashboard
+          </a>
           <a href="/articles/new" className="px-4 py-2 rounded-xl bg-orange-500 text-white text-sm">
             + Add Article
           </a>
