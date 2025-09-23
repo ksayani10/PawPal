@@ -169,27 +169,24 @@ export default function AdminDashboard() {
           </div>
 
           {/* Nav */}
-          <nav className="p-6 space-y-8">
-            <SideLink to="/admin/dashboard" label="Dashboard" icon={<HomeIcon />} />
-            <SideLink to="/admin/articles" label="Articles" icon={<DocIcon />} />
-            <SideLink to="/admin/users" label="Users" icon={<UsersIcon />} />
-            
-            {/* <SideLink to="/shelter/pets" label="Pets" icon={<PawIcon />} /> */}
-            {/* <SideLink to={handleLogout} label="logout" icon={<PawIcon/>}/> */}
-
-            
-            {/* add more links as needed */}
+           <nav className="mt-8 grid gap-7 px-6">
+            <a href="/admin" className="nav-link nav-link-active">🏠 Dashboard</a>
+            <a href="/admin/articles" className="nav-link">📰 Articles</a>
+            <a href="/admin/users" className="nav-link">👥 Users</a>
+            {/* your existing logout handler */}
+            <a href="/" className="nav-link">🚪 Settings</a>
           </nav>
+        </aside>
 
-          <div className="mt-auto p-5 text-xs text-gray-400">
+          {/* <div className="mt-auto p-5 text-xs text-gray-400">
             © {new Date().getFullYear()} PawPal
           </div>
-        </aside>
+        </aside> */}
 
         {/* Main */}
         <main className="flex-1">
           {/* Topbar */}
-          <header className="sticky top-0 z-10 bg-white/70 backdrop-blur border-b">
+          <header className="sticky top-0 z-10 bg-white/70 backdrop-blur border-white/80 shadow-sm">
             <div className="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <button
@@ -220,7 +217,7 @@ export default function AdminDashboard() {
             {/* Stat cards */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {stats.map((s, i) => (
-                <div key={i} className="rounded-2xl bg-white shadow-sm border overflow-hidden">
+                <div key={i} className="rounded-2xl bg-auto shadow-sm border overflow-hidden">
                   <div className={`h-1.5 ${s.tone}`} />
                   <div className="p-4">
                     <div className="text-xs text-gray-500">{s.title}</div>
@@ -256,7 +253,7 @@ export default function AdminDashboard() {
               {/* Donut card */}
               <section className="rounded-2xl bg-white shadow-sm border p-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="font-semibold">Employee Attendance</h2>
+                  <h2 className="font-semibold">Attendance</h2>
                   <span className="text-xs text-gray-500">Aug 2025 — Sep 2025</span>
                 </div>
 
@@ -295,7 +292,7 @@ function Brand() {
     <div className="flex items-center gap-3">
       <div className="h-9 w-9 rounded-xl bg-orange-600 grid place-items-center text-white font-bold">P</div>
       <div>
-        <div className="font-semibold leading-tight">PawPal Admin</div>
+        <div className="font-semibold leading-tight shadow-sm">PawPal Admin</div>
         <div className="text-xs text-gray-500">Control Center</div>
       </div>
     </div>
@@ -308,7 +305,7 @@ function SideLink({ to, label, icon }) {
       to={to}
       className={({ isActive }) =>
         [
-          "flex items-center gap-3 px-3 py-2 rounded-xl text-sm",
+          "flex items-center gap-3 px-3 py-2 rounded-xl text-sm shadow-sm font-medium",
           isActive ? "bg-gray-100 text-gray-900" : "text-gray-600 hover:bg-gray-50",
         ].join(" ")
       }
