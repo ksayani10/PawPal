@@ -1,7 +1,3 @@
-
-
-
-
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import jsPDF from "jspdf";
@@ -85,21 +81,27 @@ export default function PetList() {
     }
   }
 
-  // PDF export
+  // PDF export (now includes Vaccinations column)
   const downloadPDF = () => {
     const doc = new jsPDF({ unit: "pt", format: "a4" });
     doc.text("Pet List", 40, 30);
 
-    const head = [["Code", "Name", "Breed", "Status", "Age", "Gender", "Added"]];
-    const body = rows.map((p) => [
-      `#${(p._id || "").slice(-6)}`,
-      p.name || "—",
-      p.breed || "—",
-      p.status || "—",
-      p.age ?? "—",
-      p.gender || "—",
-      p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "—",
-    ]);
+    const head = [["Code", "Name", "Breed", "Status", "Age", "Gender", "Vaccinations", "Added"]];
+    const body = rows.map((p) => {
+      const vax = Array.isArray(p.vaccinations)
+        ? p.vaccinations.join(", ")
+        : (p.vaccinations || "");
+      return [
+        `#${(p._id || "").slice(-6)}`,
+        p.name || "—",
+        p.breed || "—",
+        p.status || "—",
+        p.age ?? "—",
+        p.gender || "—",
+        vax || "—",
+        p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "—",
+      ];
+    });
 
     autoTable(doc, {
       head,
@@ -185,6 +187,7 @@ export default function PetList() {
                 <Th>Status</Th>
                 <Th>Age</Th>
                 <Th>Gender</Th>
+                <Th>Vaccinations</Th> {/* new */}
                 <Th>Added</Th>
                 <Th className="text-right">Actions</Th>
               </tr>
@@ -192,64 +195,82 @@ export default function PetList() {
             <tbody className="divide-y divide-gray-100">
               {loading && (
                 <tr>
-                  <td colSpan={9} className="p-6 text-center text-sm text-gray-500">
+                  <td colSpan={10} className="p-6 text-center text-sm text-gray-500">
                     Loading…
                   </td>
                 </tr>
               )}
               {!loading && rows.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="p-6 text-center text-sm text-gray-500">
+                  <td colSpan={10} className="p-6 text-center text-sm text-gray-500">
                     No pets found
                   </td>
                 </tr>
               )}
-              {rows.map((p, i) => (
-                <tr key={p._id || i} className="hover:bg-gray-50/60">
-                  <Td>
-                    <div className="h-10 w-12 overflow-hidden rounded-md bg-gray-100 ring-1 ring-gray-200">
-                      <img src={imgSrc(p.imageUrl)} alt={p.name} className="h-full w-full object-cover" />
-                    </div>
-                  </Td>
-                  <Td className="text-xs text-gray-500">#{(p._id || "").slice(-6)}</Td>
-                  <Td className="font-medium">{p.name}</Td>
-                  <Td>{p.breed || "—"}</Td>
-                  <Td>
-                    <Badge
-                      color={
-                        (p.status || "Available") === "Available"
-                          ? "green"
-                          : (p.status || "") === "Pending"
-                          ? "amber"
-                          : "gray"
-                      }
-                    >
-                      {p.status || "Available"}
-                    </Badge>
-                  </Td>
-                  <Td>{p.age ?? "—"}</Td>
-                  <Td className="capitalize">{p.gender || "—"}</Td>
-                  <Td className="text-xs text-gray-500">
-                    {p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "—"}
-                  </Td>
-                  <Td className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Link
-                        to={`/shelter/pets/${p._id}/edit`}
-                        className="rounded-md border px-2 py-1 text-xs hover:bg-gray-50"
+              {rows.map((p, i) => {
+                const vax = Array.isArray(p.vaccinations)
+                  ? p.vaccinations.join(", ")
+                  : (p.vaccinations || "");
+
+                return (
+                  <tr key={p._id || i} className="hover:bg-gray-50/60">
+                    <Td>
+                      <div className="h-10 w-12 overflow-hidden rounded-md bg-gray-100 ring-1 ring-gray-200">
+                        <img src={imgSrc(p.imageUrl)} alt={p.name} className="h-full w-full object-cover" />
+                      </div>
+                    </Td>
+                    <Td className="text-xs text-gray-500">#{(p._id || "").slice(-6)}</Td>
+                    <Td className="font-medium">{p.name}</Td>
+                    <Td>{p.breed || "—"}</Td>
+                    <Td>
+                      <Badge
+                        color={
+                          (p.status || "Available") === "Available"
+                            ? "green"
+                            : (p.status || "") === "Pending"
+                            ? "amber"
+                            : "gray"
+                        }
                       >
-                        Edit
-                      </Link>
-                      <button
-                        onClick={() => onDelete(p._id)}
-                        className="rounded-md border px-2 py-1 text-xs text-red-600 hover:bg-red-50"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </Td>
-                </tr>
-              ))}
+                        {p.status || "Available"}
+                      </Badge>
+                    </Td>
+                    <Td>{p.age ?? "—"}</Td>
+                    <Td className="capitalize">{p.gender || "—"}</Td>
+
+                    {/* Vaccinations cell */}
+                    <Td>
+                      {vax ? (
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs ring-1 ${vaxPill(vax)}`}>
+                          {vax}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-400">—</span>
+                      )}
+                    </Td>
+
+                    <Td className="text-xs text-gray-500">
+                      {p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "—"}
+                    </Td>
+                    <Td className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Link
+                          to={`/shelter/pets/${p._id}/edit`}
+                          className="rounded-md border px-2 py-1 text-xs hover:bg-gray-50"
+                        >
+                          Edit
+                        </Link>
+                        <button
+                          onClick={() => onDelete(p._id)}
+                          className="rounded-md border px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </Td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -278,4 +299,10 @@ function Badge({ color = "gray", children }) {
   return <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs ring-1 ${map[color]}`}>{children}</span>;
 }
 
-
+/* pill color for vaccinations */
+function vaxPill(v) {
+  if (/rabies/i.test(v)) return "bg-red-50 text-red-700 ring-red-200";
+  if (/parvo/i.test(v)) return "bg-blue-50 text-blue-700 ring-blue-200";
+  if (/distemper/i.test(v)) return "bg-purple-50 text-purple-700 ring-purple-200";
+  return "bg-gray-100 text-gray-700 ring-gray-200";
+}

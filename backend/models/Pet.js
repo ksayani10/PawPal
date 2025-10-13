@@ -22,12 +22,10 @@ const petSchema = new mongoose.Schema(
     age: { type: Number, required: true },
     gender: { type: String, enum: ["male", "female"], required: true },
     status: { type: String, enum: ["Available", "Pending", "Adopted"], default: "Available" },
-
-    // optional: store a yes/no flag AND/OR a list of vaccinations
     isVaccinated: { type: Boolean, default: false },
     vaccinations: [{ type: String }],
 
-    imageUrl: { type: String }, // e.g. /uploads/1723200123-luna.jpeg
+    imageUrl: { type: String }, 
   },
   { timestamps: true }
 );
