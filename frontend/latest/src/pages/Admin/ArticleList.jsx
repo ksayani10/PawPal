@@ -74,38 +74,97 @@ const filtered = useMemo(() => items, [items]);
   };
 
   const downloadPdf = () => {
-    const doc = new jsPDF({ unit: "pt", format: "a4" });
-    doc.setFontSize(16);
-    doc.text("PawPal - Articles", 40, 40);
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
 
-    const rows = filtered.map((a, i) => [
-      i + 1,
-      a.code || "",
-      a.title || "",
-      a.category || "",
-      a.status || "",
-      a.author || "",
-      new Date(a.createdAt).toLocaleDateString(),
-    ]);
+  const marginX = 40;
+  let y = 44;
 
-    // doc.autoTable({
-    //   startY: 60,
-    //   head: [["#", "CODE", "TITLE", "CATEGORY", "STATUS", "AUTHOR", "ADDED"]],
-    //   body: rows,
-    //   styles: { fontSize: 9, cellPadding: 6, halign: "left", valign: "middle" },
-    //   headStyles: { fillColor: [33, 33, 33] },
-    // });
+  // ===== Brand: PAWPAL+ ==========================================
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(28);
+  doc.setTextColor(27, 94, 160); // blue
+  const brand = "PAWPAL";
+  doc.text(brand, marginX, y);
+  const brandW = doc.getTextWidth(brand + " ");
+  doc.setTextColor(255, 87, 34); // orange
+  doc.text("+", marginX + brandW, y);
 
-    autoTable(doc, {
-      startY: 60,
-      head: [["#", "CODE", "TITLE", "CATEGORY", "STATUS", "AUTHOR", "ADDED"]],
-      body: rows,
-      styles: { fontSize: 9, cellPadding: 6, halign: "left", valign: "middle" },
-      headStyles: { fillColor: [33, 33, 33] }
-        });
+  // Generated date
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  doc.setTextColor(110);
+  doc.text(`Generated ${new Date().toLocaleDateString()}`, marginX, y + 18);
 
-    doc.save("articles.pdf");
-  };
+  // ===== Report title ============================================
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(20);
+  doc.setTextColor(30);
+  const monthYear = new Date().toLocaleString(undefined, { month: "long", year: "numeric" });
+  y += 46;
+  doc.text(`Article Report — ${monthYear}`, marginX, y);
+
+  // ===== Filters line ============================================
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(11);
+  doc.setTextColor(130);
+  const sortLabel = sort ? sort.replace("-", ": ").toUpperCase() : "TITLE: ASC";
+  const filters =
+    `Filters: ${
+      (!q?.trim() && status === "All") ? "None" :
+      [q?.trim() ? `Query="${q.trim()}"` : null, status !== "All" ? `Status: ${status}` : null]
+        .filter(Boolean)
+        .join(" | ")
+    }  |  Sort By: ${sortLabel}`;
+  doc.text(filters, marginX, y + 18);
+
+  // ===== Table ====================================================
+  const startTableY = y + 32;
+
+  const rows = (filtered ?? []).map((a, i) => [
+    i + 1,
+    a.code || "",
+    a.title || "",
+    a.category || "",
+    a.status || "",
+    a.author || "",
+    a?.createdAt ? new Date(a.createdAt).toLocaleDateString() : "",
+  ]);
+
+  autoTable(doc, {
+    startY: startTableY,
+    head: [["#", "CODE", "TITLE", "CATEGORY", "STATUS", "AUTHOR", "ADDED"]],
+    body: rows,
+    margin: { left: marginX, right: marginX },
+    styles: { fontSize: 9, cellPadding: 6, halign: "left", valign: "middle" },
+    headStyles: { fillColor: [33, 33, 33], textColor: 255 },
+    alternateRowStyles: { fillColor: [246, 246, 246] },
+    // Color the STATUS column (index 4) based on value
+    didParseCell: (data) => {
+      if (data.section === "body" && data.column.index === 4) {
+        const v = String(data.cell.raw || "").toLowerCase();
+        if (v === "published") {
+          data.cell.styles.textColor = [21, 128, 61]; // green-700
+        } else if (v === "pending") {
+          data.cell.styles.textColor = [180, 83, 9];  // amber-700
+        } else if (v === "draft") {
+          data.cell.styles.textColor = [55, 65, 81];  // gray-700
+        }
+      }
+    },
+    didDrawPage: () => {
+      const page = doc.internal.getNumberOfPages();
+      const pw = doc.internal.pageSize.getWidth();
+      const ph = doc.internal.pageSize.getHeight();
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(140);
+      doc.text(`Page ${page}`, pw - marginX, ph - 20, { align: "right" });
+    },
+  });
+
+  doc.save("articles.pdf");
+};
+
 
   return (
     <div className="p-6">
