@@ -53,10 +53,9 @@ const articleSchema = new mongoose.Schema(
     author: { type: String, },
     status: { type: String, enum: ["Draft", "Published"], default: "Draft" },
     content: { type: String,  },
-    image: { type: String }, // store uploaded image path or URL
+    image: { type: String }, 
   },
   { timestamps: true }
 );
 
 module.exports = mongoose.model("Article", articleSchema);
-6

@@ -1,7 +1,3 @@
-
-
-
-
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import jsPDF from "jspdf";
@@ -15,7 +11,6 @@ const imgSrc = (u = "") => (u ? (isAbs(u) ? u : api(u)) : "/assets/placeholder-p
 
 export default function PetList() {
   const { token } = useAuth();
-  const auth = token ? { Authorization: `Bearer ${token}` } : {};
 
   const [pets, setPets] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -24,35 +19,46 @@ export default function PetList() {
   const [sort, setSort] = useState("Name A→Z");
   const [error, setError] = useState("");
 
-  // Load data
+  // Load data (headers constructed inside effect; depend on token only)
   useEffect(() => {
+    let cancelled = false;
+
     (async () => {
       try {
         setError("");
         setLoading(true);
-        const res = await fetch(api("/api/pets"), { headers: auth });
+
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const res = await fetch(api("/api/pets"), { headers });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
         const data = await res.json();
-        setPets(Array.isArray(data) ? data : []);
+        if (!cancelled) setPets(Array.isArray(data) ? data : []);
       } catch (e) {
         console.error(e);
-        setError("Failed to load pets");
+        if (!cancelled) setError("Failed to load pets");
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
-  }, [token]); // refetch when auth changes
 
-  // Derived rows
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  // Derived rows for UI/PDF
   const rows = useMemo(() => {
     let list = [...pets];
     const query = q.trim().toLowerCase();
+
     if (query) {
       list = list.filter((p) =>
         `${p.name ?? ""} ${p.breed ?? ""} ${p.gender ?? ""}`.toLowerCase().includes(query)
       );
     }
-    const norm = (s) => (s || "Available");
+
+    const norm = (s) => s || "Available";
     if (status !== "All") list = list.filter((p) => norm(p.status) === status);
 
     switch (sort) {
@@ -76,7 +82,8 @@ export default function PetList() {
     const backup = pets;
     setPets((prev) => prev.filter((p) => p._id !== id)); // optimistic
     try {
-      const res = await fetch(api(`/api/pets/${id}`), { method: "DELETE", headers: auth });
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await fetch(api(`/api/pets/${id}`), { method: "DELETE", headers });
       if (!res.ok) throw new Error("Delete failed");
     } catch (e) {
       console.error(e);
@@ -85,29 +92,116 @@ export default function PetList() {
     }
   }
 
-  // PDF export
+  // -------- PDF export (PAWPAL+ header + filters + colored cells) --------
   const downloadPDF = () => {
     const doc = new jsPDF({ unit: "pt", format: "a4" });
-    doc.text("Pet List", 40, 30);
 
-    const head = [["Code", "Name", "Breed", "Status", "Age", "Gender", "Added"]];
-    const body = rows.map((p) => [
-      `#${(p._id || "").slice(-6)}`,
-      p.name || "—",
-      p.breed || "—",
-      p.status || "—",
-      p.age ?? "—",
-      p.gender || "—",
-      p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "—",
-    ]);
+    const marginX = 40;
+    let y = 44;
+
+    // Brand: PAWPAL+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(28);
+    doc.setTextColor(27, 94, 160); // blue
+    const brand = "PAWPAL";
+    doc.text(brand, marginX, y);
+    const brandW = doc.getTextWidth(brand + " ");
+    doc.setTextColor(255, 87, 34); // orange
+    doc.text("+", marginX + brandW, y);
+
+    // Generated date
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    doc.setTextColor(110);
+    doc.text(`Generated ${new Date().toLocaleDateString()}`, marginX, y + 18);
+
+    // Title
+    const monthYear = new Date().toLocaleString(undefined, { month: "long", year: "numeric" });
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.setTextColor(30);
+    y += 46;
+    doc.text(`Pet Report — ${monthYear}`, marginX, y);
+
+    // Filters line
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(11);
+    doc.setTextColor(130);
+    const sortLabel = (() => {
+      switch (sort) {
+        case "Name Z→A":
+          return "NAME: DESC";
+        case "Age Low→High":
+          return "AGE: ASC";
+        case "Age High→Low":
+          return "AGE: DESC";
+        default:
+          return "NAME: ASC";
+      }
+    })();
+    const filters =
+      `Filters: ${
+        (!q?.trim() && status === "All")
+          ? "None"
+          : [q?.trim() ? `Query="${q.trim()}"` : null, status !== "All" ? `Status: ${status}` : null]
+              .filter(Boolean)
+              .join(" | ")
+      }  |  Sort By: ${sortLabel}`;
+    doc.text(filters, marginX, y + 18);
+
+    // Table
+    const startY = y + 32;
+    const body = rows.map((p) => {
+      const vax = Array.isArray(p.vaccinations) ? p.vaccinations.join(", ") : (p.vaccinations || "");
+      return [
+        `#${(p._id || "").slice(-6)}`,
+        p.name || "—",
+        p.breed || "—",
+        p.status || "Available",
+        p.age ?? "—",
+        p.gender || "—",
+        vax || "—",
+        p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "—",
+      ];
+    });
 
     autoTable(doc, {
-      head,
+      startY,
+      margin: { left: marginX, right: marginX },
+      head: [["CODE", "NAME", "BREED", "STATUS", "AGE", "GENDER", "VACCINATIONS", "ADDED"]],
       body,
-      startY: 50,
-      styles: { fontSize: 9, cellPadding: 6 },
-      headStyles: { fillColor: [243, 244, 246], textColor: 0 },
-      margin: { left: 40, right: 40 },
+      styles: { fontSize: 9, cellPadding: 6, halign: "left", valign: "middle" },
+      headStyles: { fillColor: [33, 33, 33], textColor: 255 },
+      alternateRowStyles: { fillColor: [246, 246, 246] },
+      didParseCell: (data) => {
+        if (data.section !== "body") return;
+
+        // STATUS (col 3)
+        if (data.column.index === 3) {
+          const v = String(data.cell.raw || "").toLowerCase();
+          if (v === "available") data.cell.styles.textColor = [21, 128, 61];     // green-700
+          else if (v === "pending") data.cell.styles.textColor = [180, 83, 9];   // amber-700
+          else if (v === "adopted") data.cell.styles.textColor = [55, 65, 81];   // gray-700
+        }
+
+        // VACCINATIONS (col 6)
+        if (data.column.index === 6) {
+          const v = String(data.cell.raw || "");
+          if (/rabies/i.test(v)) data.cell.styles.textColor = [220, 38, 38];        // red-600
+          else if (/parvo/i.test(v)) data.cell.styles.textColor = [37, 99, 235];    // blue-600
+          else if (/distemper/i.test(v)) data.cell.styles.textColor = [124, 58, 237]; // purple-600
+          else data.cell.styles.textColor = [55, 65, 81];                            // gray-700
+        }
+      },
+      didDrawPage: () => {
+        const page = doc.internal.getNumberOfPages();
+        const pw = doc.internal.pageSize.getWidth();
+        const ph = doc.internal.pageSize.getHeight();
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(140);
+        doc.text(`Page ${page}`, pw - marginX, ph - 20, { align: "right" });
+      },
     });
 
     doc.save("pet_list.pdf");
@@ -185,6 +279,7 @@ export default function PetList() {
                 <Th>Status</Th>
                 <Th>Age</Th>
                 <Th>Gender</Th>
+                <Th>Vaccinations</Th>
                 <Th>Added</Th>
                 <Th className="text-right">Actions</Th>
               </tr>
@@ -192,64 +287,81 @@ export default function PetList() {
             <tbody className="divide-y divide-gray-100">
               {loading && (
                 <tr>
-                  <td colSpan={9} className="p-6 text-center text-sm text-gray-500">
+                  <td colSpan={10} className="p-6 text-center text-sm text-gray-500">
                     Loading…
                   </td>
                 </tr>
               )}
               {!loading && rows.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="p-6 text-center text-sm text-gray-500">
+                  <td colSpan={10} className="p-6 text-center text-sm text-gray-500">
                     No pets found
                   </td>
                 </tr>
               )}
-              {rows.map((p, i) => (
-                <tr key={p._id || i} className="hover:bg-gray-50/60">
-                  <Td>
-                    <div className="h-10 w-12 overflow-hidden rounded-md bg-gray-100 ring-1 ring-gray-200">
-                      <img src={imgSrc(p.imageUrl)} alt={p.name} className="h-full w-full object-cover" />
-                    </div>
-                  </Td>
-                  <Td className="text-xs text-gray-500">#{(p._id || "").slice(-6)}</Td>
-                  <Td className="font-medium">{p.name}</Td>
-                  <Td>{p.breed || "—"}</Td>
-                  <Td>
-                    <Badge
-                      color={
-                        (p.status || "Available") === "Available"
-                          ? "green"
-                          : (p.status || "") === "Pending"
-                          ? "amber"
-                          : "gray"
-                      }
-                    >
-                      {p.status || "Available"}
-                    </Badge>
-                  </Td>
-                  <Td>{p.age ?? "—"}</Td>
-                  <Td className="capitalize">{p.gender || "—"}</Td>
-                  <Td className="text-xs text-gray-500">
-                    {p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "—"}
-                  </Td>
-                  <Td className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Link
-                        to={`/shelter/pets/${p._id}/edit`}
-                        className="rounded-md border px-2 py-1 text-xs hover:bg-gray-50"
+              {rows.map((p, i) => {
+                const vax = Array.isArray(p.vaccinations)
+                  ? p.vaccinations.join(", ")
+                  : (p.vaccinations || "");
+
+                return (
+                  <tr key={p._id || i} className="hover:bg-gray-50/60">
+                    <Td>
+                      <div className="h-10 w-12 overflow-hidden rounded-md bg-gray-100 ring-1 ring-gray-200">
+                        <img src={imgSrc(p.imageUrl)} alt={p.name} className="h-full w-full object-cover" />
+                      </div>
+                    </Td>
+                    <Td className="text-xs text-gray-500">#{(p._id || "").slice(-6)}</Td>
+                    <Td className="font-medium">{p.name}</Td>
+                    <Td>{p.breed || "—"}</Td>
+                    <Td>
+                      <Badge
+                        color={
+                          (p.status || "Available") === "Available"
+                            ? "green"
+                            : (p.status || "") === "Pending"
+                            ? "amber"
+                            : "gray"
+                        }
                       >
-                        Edit
-                      </Link>
-                      <button
-                        onClick={() => onDelete(p._id)}
-                        className="rounded-md border px-2 py-1 text-xs text-red-600 hover:bg-red-50"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </Td>
-                </tr>
-              ))}
+                        {p.status || "Available"}
+                      </Badge>
+                    </Td>
+                    <Td>{p.age ?? "—"}</Td>
+                    <Td className="capitalize">{p.gender || "—"}</Td>
+                    <Td>
+                      {vax ? (
+                        <span
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs ring-1 ${vaxPill(vax)}`}
+                        >
+                          {vax}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-400">—</span>
+                      )}
+                    </Td>
+                    <Td className="text-xs text-gray-500">
+                      {p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "—"}
+                    </Td>
+                    <Td className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Link
+                          to={`/shelter/pets/${p._id}/edit`}
+                          className="rounded-md border px-2 py-1 text-xs hover:bg-gray-50"
+                        >
+                          Edit
+                        </Link>
+                        <button
+                          onClick={() => onDelete(p._id)}
+                          className="rounded-md border px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </Td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -278,4 +390,10 @@ function Badge({ color = "gray", children }) {
   return <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs ring-1 ${map[color]}`}>{children}</span>;
 }
 
-
+/* pill color for vaccinations */
+function vaxPill(v) {
+  if (/rabies/i.test(v)) return "bg-red-50 text-red-700 ring-red-200";
+  if (/parvo/i.test(v)) return "bg-blue-50 text-blue-700 ring-blue-200";
+  if (/distemper/i.test(v)) return "bg-purple-50 text-purple-700 ring-purple-200";
+  return "bg-gray-100 text-gray-700 ring-gray-200";
+}

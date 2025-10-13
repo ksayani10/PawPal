@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 
 const API_BASE = import.meta?.env?.VITE_API_BASE || "";
 
+const VACCINE_OPTIONS = ["Rabies", "Parvo", "Distemper"];
+
 export default function EditPetPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -38,15 +40,19 @@ export default function EditPetPage() {
         }
         if (!data) throw new Error("Pet not found");
 
+        const vaxString = Array.isArray(data.vaccinations)
+          ? (data.vaccinations[0] ?? "")             // pick first if array comes back
+          : (data.vaccinations || "");
+
+
+
         setForm({
           name: data.name || "",
           breed: data.breed || "",
           age: data.age ?? "",
           gender: data.gender || "",
           status: data.status || "Available",
-          vaccinations: Array.isArray(data.vaccinations)
-            ? data.vaccinations.join(", ")
-            : data.vaccinations || "",
+          vaccinations: vaxString,
           imageUrl: data.imageUrl || "",
         });
         setPreview(data.imageUrl || "");
@@ -73,14 +79,12 @@ export default function EditPetPage() {
       setSaving(true);
       const fd = new FormData();
       // send fields
-      Object.entries({
-        name: form.name,
-        breed: form.breed,
-        age: form.age,
-        gender: form.gender,
-        status: form.status,
-        vaccinations: form.vaccinations,
-      }).forEach(([k, v]) => fd.append(k, v));
+       fd.append("name", form.name);
+      fd.append("breed", form.breed);
+      fd.append("age", form.age);
+      fd.append("gender", form.gender);
+      fd.append("status", form.status);
+      fd.append("vaccinations", form.vaccinations);
 
       // only send new file if chosen
       if (file) fd.append("image", file);
@@ -133,11 +137,18 @@ export default function EditPetPage() {
             <option>Pending</option>
             <option>Adopted</option>
           </Select>
-          <TextInput
-            label="Vaccinations (comma separated)"
+           <Select
+            label="Vaccinations"
             value={form.vaccinations}
             onChange={(v) => setForm({ ...form, vaccinations: v })}
-          />
+          >
+            <option value="">-- Select --</option>
+            {VACCINE_OPTIONS.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </Select>
         </div>
 
         <label className="relative flex cursor-pointer items-center gap-4 rounded-2xl border border-dashed p-4 hover:bg-gray-50">
