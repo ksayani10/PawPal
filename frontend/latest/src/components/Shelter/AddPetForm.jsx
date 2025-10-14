@@ -137,6 +137,8 @@ import { Link, useNavigate } from "react-router-dom";
 // Use your env var if present; otherwise empty prefix.
 const API_BASE = import.meta?.env?.VITE_API_BASE || "";
 
+const VACCINATION_OPTIONS = ["Rabies", "Parvo", "Distemper"];
+
 export default function AddPetPage() {
   const navigate = useNavigate();
 
@@ -241,13 +243,23 @@ export default function AddPetPage() {
             <option>Pending</option>
             <option>Adopted</option>
           </Select>
-          <TextInput
-            label="Vaccinations (comma separated)"
-            value={form.vaccinations}
-            onChange={(v) =>
-              setForm({ ...form, vaccinations: v })
-            }
-          />
+          
+          
+
+
+<Select
+  label="Vaccinations"
+  value={form.vaccinations}
+  onChange={(v) => setForm({ ...form, vaccinations: v })}
+>
+  <option value="">-- Select --</option>
+  {VACCINATION_OPTIONS.map((opt) => (
+    <option key={opt} value={opt}>{opt}</option>
+  ))}
+</Select>
+
+
+
         </div>
 
         <label className="relative flex cursor-pointer items-center gap-4 rounded-2xl border border-dashed p-4 hover:bg-gray-50">
