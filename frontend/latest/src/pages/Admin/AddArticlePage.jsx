@@ -83,13 +83,18 @@ export default function AddArticlePage() {
 
           <div>
             <label className="block text-sm font-medium mb-1">Category</label>
-            <input
-              name="category"
-              value={form.category}
-              onChange={onChange}
-              className="w-full px-3 py-2 rounded-xl border"
-              placeholder="Training, Health, Nutrition…"
-            />
+            <select
+  name="category"
+  value={form.category}
+  onChange={onChange}
+  className="w-full px-3 py-2 rounded-xl border"
+>
+  <option value="">-- Select Category --</option>
+  <option value="Training">Training</option>
+  <option value="Health">Health</option>
+  <option value="Nutrition">Nutrition</option>
+</select>
+
           </div>
 
           <div>
